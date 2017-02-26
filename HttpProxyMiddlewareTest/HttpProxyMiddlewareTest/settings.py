@@ -30,16 +30,17 @@ NEWSPIDER_MODULE = 'HttpProxyMiddlewareTest.spiders'
 #CONCURRENT_REQUESTS_PER_IP=16
 
 # Disable cookies (enabled by default)
-#COOKIES_ENABLED=False
+COOKIES_ENABLED=False
 
 # Disable Telnet Console (enabled by default)
 #TELNETCONSOLE_ENABLED=False
 
 # Override the default request headers:
-#DEFAULT_REQUEST_HEADERS = {
-#   'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-#   'Accept-Language': 'en',
-#}
+DEFAULT_REQUEST_HEADERS = {
+   'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+   'Accept-Language': 'en',
+   'Referer' : 'http://roll.news.qq.com/',
+}
 
 # Enable or disable spider middlewares
 # See http://scrapy.readthedocs.org/en/latest/topics/spider-middleware.html
@@ -50,8 +51,12 @@ NEWSPIDER_MODULE = 'HttpProxyMiddlewareTest.spiders'
 # Enable or disable downloader middlewares
 # See http://scrapy.readthedocs.org/en/latest/topics/downloader-middleware.html
 DOWNLOADER_MIDDLEWARES = {
-    'scrapy.downloadermiddlewares.downloadtimeout.DownloadTimeoutMiddleware': 350,
-    'HttpProxyMiddlewareTest.HttpProxyMiddleware.HttpProxyMiddleware': 543,
+   # 'HttpProxyMiddlewareTest.MyMiddleware.MyUserAgentMiddleware':350,         # usagent 设置
+   # 'scrapy.downloadermiddlewares.useragent.UserAgentMiddleware': None,
+   # "scrapy.downloadermiddlewares.downloadtimeout.DownloadTimeoutMiddleware":None,
+    #'HttpProxyMiddlewareTest.HttpProxyMiddleware.HttpProxyMiddleware': 480,
+    #"scrapy.downloadermiddlewares.httpproxy.HttpProxyMiddleware":520,
+
 }
 
 # LOG_LEVEL = "INFO"
@@ -64,9 +69,10 @@ DOWNLOADER_MIDDLEWARES = {
 
 # Configure item pipelines
 # See http://scrapy.readthedocs.org/en/latest/topics/item-pipeline.html
-#ITEM_PIPELINES = {
-#    'HttpProxyMiddlewareTest.pipelines.SomePipeline': 300,
-#}
+ITEM_PIPELINES = {
+    #'HttpProxyMiddlewareTest.pipelines.HttpproxymiddlewaretestPipeline': 300,
+    'HttpProxyMiddlewareTest.pipelines.MongoPipeline': 800,
+}
 
 # Enable and configure the AutoThrottle extension (disabled by default)
 # See http://doc.scrapy.org/en/latest/topics/autothrottle.html
@@ -88,3 +94,5 @@ DOWNLOADER_MIDDLEWARES = {
 #HTTPCACHE_STORAGE='scrapy.extensions.httpcache.FilesystemCacheStorage'
 
 DOWNLOAD_TIMEOUT = 10
+
+RETRY_ENABLED = False
