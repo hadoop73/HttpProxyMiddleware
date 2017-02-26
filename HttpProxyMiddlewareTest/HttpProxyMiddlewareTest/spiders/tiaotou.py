@@ -55,7 +55,6 @@ from pybloom import BloomFilter
 另外,每隔一段时间,从爬取失败的数据库中新建 Request ,重新爬取
 """
 from pybloom import BloomFilter
-from ssdb import SSDB
 from ..ssdbOp import *
 
 
@@ -80,11 +79,6 @@ class TSpider(scrapy.spiders.Spider):
 
     host = 'localhost'
     port = 1234
-    # 对爬虫进行初始化
-    sdb = SSDB(host=host,port=port)
-    notVisitUrl = getNotVisitUrl(sdb)
-    if len(notVisitUrl) > 0:
-        start_urls = set(notVisitUrl)
 
 
     def parse(self,response):

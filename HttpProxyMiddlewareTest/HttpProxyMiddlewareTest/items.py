@@ -14,7 +14,9 @@ class HttpproxymiddlewaretestItem(scrapy.Item):
     # name = scrapy.Field()
     pass
 
-
+class NewsTotalItem(scrapy.Item):
+    newsid = Field()
+    total = Field()    # 新闻总评论数
 
 class NewsItem(scrapy.Item):
     # define the fields for your item here like:

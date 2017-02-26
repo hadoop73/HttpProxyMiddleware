@@ -19,10 +19,5 @@ import random
 print random.random()
 
 import time
-a = int(round(time.time()))
-s = str(a)+ str(random.randint(100,900))
-print s
-
-a = '{"a":123}'
-b = json.loads(a)
-print "a" in b
+day = datetime(2016,2, 20)
+print day < datetime(2016,8, 20)

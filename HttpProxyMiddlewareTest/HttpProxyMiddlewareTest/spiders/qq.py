@@ -1,10 +1,7 @@
 # coding:utf-8
 
 import scrapy
-from ..items import NewsItem,ReadItem
-from scrapy.http import Request
-import scrapy
-from ..items import NewsItem,ReadItem
+from ..items import NewsItem,ReadItem,NewsTotalItem
 from scrapy.http import Request
 
 import re
@@ -55,7 +52,7 @@ from pybloom import BloomFilter
 另外,每隔一段时间,从爬取失败的数据库中新建 Request ,重新爬取
 """
 from pybloom import BloomFilter
-from ssdb import SSDB
+#from ssdb import SSDB
 from ..ssdbOp import *
 from datetime import datetime, date, timedelta
 import random
@@ -113,21 +110,12 @@ class QSpider(scrapy.spiders.Spider):
     website_possible_httpstatus_list = [0]
     handle_httpstatus_list = [0]
     #start_urls = ["http://news.qq.com/a/20160201/012106.htm"]
-    start_urls =["http://roll.news.qq.com/interface/roll.php?" + str(random.random()) + "&cata=&site=news&date=2016-04-20&page=1&mode=1&of=json"]
-    day = datetime(2016,4, 20)
+    start_urls =["http://roll.news.qq.com/interface/roll.php?" + str(random.random()) + "&cata=&site=news&date=2016-02-01&page=1&mode=1&of=json"]
+    day = datetime(2016,2, 1)
     urlStr = "http://roll.news.qq.com/interface/roll.php?{rand}&cata=&site=news&date={time}&page={page}&mode=1&of=json"
-
-    bnews = BloomFilter(capacity=1000000, error_rate=0.00001)
-    buser = BloomFilter(capacity=100000, error_rate=0.00001)
-    burl = BloomFilter(capacity=1000000, error_rate=0.00001)
 
     host = 'localhost'
     port = 1234
-    # 对爬虫进行初始化
-    sdb = SSDB(host=host,port=port)
-    notVisitUrl = getNotVisitUrl(sdb)
-    if len(notVisitUrl) > 0:
-        start_urls = set(notVisitUrl)
 
     def getNewsUrl(self,article_info):
         p = re.compile('http:.*?htm')
@@ -154,6 +142,19 @@ class QSpider(scrapy.spiders.Spider):
                 jsn = json.loads(data,encoding='gbk')
                 page = int(jsn['data']['page'])
                 count = int(jsn['data']['count'])
+
+                if page >= count:
+                    self.day = self.day + timedelta(days=1)
+                    page = 1
+                if self.day < datetime(2016,8, 1):    #  先爬取每天的列表，再去爬取列表中的新闻
+                    rand = random.random()
+                    page += 1
+                    dayUrl = self.urlStr.format(rand=str(rand),
+                                                time=datetime.strftime(self.day, '%Y-%m-%d'),
+                                                page=str(page))
+                    req = Request(dayUrl, self.parse, headers={"Referer": "http://roll.news.qq.com/"})
+                    yield req  # 继续爬取每天的每页新闻
+
                 article_info = jsn['data']['article_info']
                 urls = self.getNewsUrl(article_info)  # 获取所有的新闻 url
                 if urls != None:
@@ -161,16 +162,7 @@ class QSpider(scrapy.spiders.Spider):
                         if "tuhua" not in u:
                             rq = Request(u, self.parseNews,headers={"Referer":"http://roll.news.qq.com/"})
                             yield rq
-                if page >= count:
-                    self.day = self.day + timedelta(days=1)
-                    page = 1
-                rand = random.random()
-                page += 1
-                dayUrl = self.urlStr.format(rand=str(rand),
-                                            time=datetime.strftime(self.day, '%Y-%m-%d'),
-                                            page=str(page))
-                req = Request(dayUrl, self.parse,headers={"Referer":"http://roll.news.qq.com/"})
-                yield req  # 继续爬取每天的每页新闻
+
             except:
                 pass
 
@@ -251,7 +243,11 @@ class QSpider(scrapy.spiders.Spider):
                 m = re.search(p,data)
                 data = m.group(0)
                 jsn = json.loads(data)
-                if "errorMsg" not in jsn:
+                item = NewsTotalItem()
+                item['newsid'] = response.meta['newsid']
+                item['total'] = jsn['data']['total']
+                yield item
+                if ("errorMsg" not in jsn) and (jsn['data']['total']<=10000):   # 只爬取评论量少于 1w 的文章评论
                     retnum = jsn['data']['retnum']
                     reqnum = jsn['data']['reqnum']
                     if retnum > 0:
@@ -263,7 +259,7 @@ class QSpider(scrapy.spiders.Spider):
                             item['digg_count'] = m['up']
                             item['reply_count'] = m['rep']
                             yield item
-                    if retnum==reqnum:
+                    if (retnum==reqnum) and (jsn['data']['total'])>0:
                         last = jsn['data']['last']
                         a = int(round(time.time()))
 
